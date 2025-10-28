@@ -155,12 +155,13 @@ async def search_port_pairs(origin: str = None, destination: str = None):
 
     for pair in port_pairs:
         parts = pair.split("-")
-        if len(parts) == 2:
-            pol, pod = parts
+        if len(parts) >= 2:
+            pol = parts[0].strip()
+            pod = "-".join(parts[1:]).strip()  # Handle cases with multiple dashes
             match = True
-            if origin and origin.upper() not in pol.upper():
+            if origin and not pol.upper().startswith(origin.upper()):
                 match = False
-            if destination and destination.upper() not in pod.upper():
+            if destination and not pod.upper().startswith(destination.upper()):
                 match = False
             if match:
                 filtered_pairs.append(pair)
