@@ -108,8 +108,12 @@ async def get_port_pair_data(port_pair: str):
         # Try to get the data for the port pair
         data = df.loc[port_pair]
 
-        # Convert to dict and handle the response
-        result = {"port_pair": port_pair, "data": data.to_dict()}
+        # Convert to array of dictionaries in column order (already chronological)
+        data_array = []
+        for date in data.index:
+            data_array.append({date: data[date]})
+
+        result = {"port_pair": port_pair, "data": data_array}
 
         return result
     except KeyError:
