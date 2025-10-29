@@ -247,7 +247,7 @@ async def proxy_spoton_request(
         response.raise_for_status()
 
         # Return the original response from CMA CGM API
-        return response.json()
+        return {"data": response.json()}
 
     except requests.exceptions.HTTPError as e:
         raise HTTPException(
