@@ -1,10 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import os
+import json
+import requests
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -66,6 +68,8 @@ async def root():
             "/port-pairs": "Get list of all available port pairs",
             "/port-pairs/{port_pair}": "Get data for a specific port pair",
             "/dates": "Get list of all available dates",
+            "/search": "Search port pairs by origin and/or destination",
+            "/proxy": "Proxy to CMA CGM SpotOn API for live quotes",
         },
     }
 
@@ -175,6 +179,87 @@ async def search_port_pairs(origin: str = None, destination: str = None):
         "results": filtered_pairs,
         "count": len(filtered_pairs),
     }
+
+
+@app.get("/proxy")
+async def proxy_spoton_request(
+    portOfLoading: str = Query(..., description="Port of loading (e.g., ESBIO)"),
+    portOfDischarge: str = Query(..., description="Port of discharge (e.g., BRSSZ)"),
+    departureDate: str = Query(..., description="Departure date (YYYY-MM-DD)"),
+    requestedEquipments: str = Query(
+        ...,
+        description='JSON array of equipment requests, e.g., [{"numberOfContainers":5,"weightPerContainer":18000,"equipmentGroupIsoCode":"40GP"}]',
+    ),
+    token: Optional[str] = Query(
+        None,
+        description="Optional Bearer token (if not provided, uses environment variable)",
+    ),
+):
+    """
+    Proxy endpoint to query CMA CGM SpotOn API.
+
+    Makes a POST request to the CMA CGM API and returns the original response.
+
+    Example:
+    /proxy?portOfLoading=ESBIO&portOfDischarge=BRSSZ&departureDate=2025-11-15&requestedEquipments=[{"numberOfContainers":5,"weightPerContainer":18000,"equipmentGroupIsoCode":"40GP"}]
+    """
+
+    # Parse requestedEquipments JSON string
+    try:
+        equipment_list = json.loads(requestedEquipments)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid requestedEquipments format. Must be a valid JSON array.",
+        )
+
+    # Get token from parameter or environment variable
+    bearer_token = token or os.environ.get("CMA_CGM_TOKEN")
+    if not bearer_token:
+        raise HTTPException(
+            status_code=401,
+            detail="No authentication token provided. Use 'token' parameter or set CMA_CGM_TOKEN environment variable.",
+        )
+
+    # Build the request payload
+    payload = {
+        "departureDate": departureDate,
+        "portOfLoading": portOfLoading,
+        "portOfDischarge": portOfDischarge,
+        "locationCodificationType": "UNLOCODE",
+        "spotDDSMConditionsOnly": False,
+        "requestedEquipments": equipment_list,
+    }
+
+    # Make the POST request to CMA CGM API
+    url = "https://apis.cma-cgm.net/pricing/commercial/instantquote/v2/spotOn/search"
+    params = {"behalfOf": "API0001734"}
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "Range": "0-4",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = requests.post(
+            url, params=params, headers=headers, json=payload, timeout=30
+        )
+        response.raise_for_status()
+
+        # Return the original response from CMA CGM API
+        return response.json()
+
+    except requests.exceptions.HTTPError as e:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"CMA CGM API error: {response.text}",
+        )
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(
+            status_code=503, detail=f"Failed to connect to CMA CGM API: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 if __name__ == "__main__":
