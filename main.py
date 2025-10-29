@@ -124,10 +124,12 @@ async def get_port_pair_data(port_pair: str):
         return result
     except KeyError:
         # Return empty data instead of raising error
-        return {"port_pair": port_pair, 
-                "data": [],  
-                "status_code"=404, 
-                "detail"=f"Port pair '{port_pair}' not found. Use /port-pairs to see available port pairs.",}
+        return {
+            "port_pair": port_pair,
+            "data": [],
+            "status_code": 404,
+            "detail": f"Port pair '{port_pair}' not found. Use /port-pairs to see available port pairs.",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
