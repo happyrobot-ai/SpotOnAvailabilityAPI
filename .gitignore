@@ -51,3 +51,12 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# Project-specific files
+sample_response.json
+parsed_response.json
+parsed_response.txt
+condensed_sample.json
+test_condensed.py
+agent_node_code.py
+parse_spoton_response.py
+
