@@ -102,6 +102,8 @@ async def get_port_pair_data(port_pair: str):
     Get booking data for a specific port pair.
 
     Example: /port-pairs/BJCOO-BRPEC
+
+    Returns empty data array if port pair not found.
     """
     if df is None:
         raise HTTPException(
@@ -121,10 +123,11 @@ async def get_port_pair_data(port_pair: str):
 
         return result
     except KeyError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Port pair '{port_pair}' not found. Use /port-pairs to see available port pairs.",
-        )
+        # Return empty data instead of raising error
+        return {"port_pair": port_pair, 
+                "data": [],  
+                status_code=404, 
+                detail=f"Port pair '{port_pair}' not found. Use /port-pairs to see available port pairs.",}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
