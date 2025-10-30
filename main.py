@@ -397,7 +397,7 @@ async def port_to_city(
 
     # Handle special case: 'none' returns empty string
     if isinstance(ports, str) and ports.lower() == "none":
-        return ""
+        return {"cities": ""}
 
     # Handle different input formats
     port_list = []
@@ -424,15 +424,15 @@ async def port_to_city(
     if len(port_list) == 1:
         # Single port - return just the city name as a string
         port_upper = port_list[0].strip().upper()
-        return PORT_TO_CITY.get(port_upper, "Unknown")
+        return {"cities": PORT_TO_CITY.get(port_upper, "")}
     else:
         # Multiple ports - return array of city names
         result = []
         for port_code in port_list:
             port_upper = port_code.strip().upper()
             if port_upper:  # Skip empty strings
-                result.append(PORT_TO_CITY.get(port_upper, "Unknown"))
-        return result
+                result.append(PORT_TO_CITY.get(port_upper, ""))
+        return {"cities": result}
 
 
 @app.get("/proxy")
