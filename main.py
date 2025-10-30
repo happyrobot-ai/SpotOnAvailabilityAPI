@@ -6,7 +6,7 @@ import os
 import json
 import requests
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -26,6 +26,172 @@ app.add_middleware(
 
 # Global variable to store the dataframe
 df = None
+
+# Port code to city name mapping (UN/LOCODE standard)
+PORT_TO_CITY = {
+    # China
+    "CNYTN": "Yantian",
+    "CNSHA": "Shanghai",
+    "CNNGB": "Ningbo",
+    "CNSHK": "Shekou",
+    "CNTAO": "Qingdao",
+    "CNTXG": "Tianjin Xingang",
+    "CNXMN": "Xiamen",
+    "CNDLC": "Dalian",
+    "CNHUA": "Huangpu",
+    "CNSZX": "Shenzhen",
+    "CNQZH": "Quanzhou",
+    "CNFOC": "Fuzhou",
+    "CNLYG": "Lianyungang",
+    "CNWUH": "Wuhan",
+    "CNZUH": "Zhuhai",
+    "CNZJG": "Zhanjiang",
+    "CNCAN": "Guangzhou",
+    "CNNKG": "Nanjing",
+    "CNSHG": "Shanghai",
+    # Hong Kong
+    "HKHKG": "Hong Kong",
+    # Singapore
+    "SGSIN": "Singapore",
+    # Japan
+    "JPNGO": "Nagoya",
+    "JPOSA": "Osaka",
+    "JPTYO": "Tokyo",
+    "JPYOK": "Yokohama",
+    "JPUKB": "Kobe",
+    "JPHKT": "Hakata",
+    "JPMOJ": "Moji",
+    # South Korea
+    "KRPUS": "Busan",
+    "KRICH": "Incheon",
+    # Taiwan
+    "TWKHH": "Kaohsiung",
+    "TWTPE": "Taipei",
+    # Southeast Asia
+    "THBKK": "Bangkok",
+    "THLCH": "Laem Chabang",
+    "VNSGN": "Ho Chi Minh City",
+    "VNHPH": "Haiphong",
+    "VNDAD": "Da Nang",
+    "VNVUT": "Vung Tau",
+    "IDJKT": "Jakarta",
+    "IDSUB": "Surabaya",
+    "IDBLW": "Belawan",
+    "MYBTU": "Bintulu",
+    "MYPEN": "Penang",
+    "MYPKG": "Port Klang",
+    "MYTPP": "Tanjung Pelepas",
+    "PHMNL": "Manila",
+    "KHKOS": "Sihanoukville",
+    # Middle East
+    "AEJEA": "Jebel Ali",
+    "AEAJM": "Ajman",
+    "AESHJ": "Sharjah",
+    "AEKHL": "Khalifa Port",
+    "OMSLL": "Salalah",
+    "OMSOH": "Sohar",
+    "SAJED": "Jeddah",
+    "QAHMD": "Hamad Port",
+    "KWSWK": "Shuwaikh",
+    "BHKBS": "Khalifa Bin Salman",
+    "PKBQM": "Karachi",
+    "PKKHI": "Karachi",
+    # India
+    "INNSA": "Nhava Sheva",
+    "INMUN": "Mumbai",
+    "INCCU": "Kolkata",
+    "INCOK": "Kochi",
+    "INHZA": "Hazira",
+    "INVTZ": "Visakhapatnam",
+    "INIXE": "Mangalore",
+    "INTUT": "Tuticorin",
+    # Europe
+    "NLRTM": "Rotterdam",
+    "DEHAM": "Hamburg",
+    "BEANR": "Antwerp",
+    "FRFOS": "Fos-sur-Mer",
+    "FRLEH": "Le Havre",
+    "GBFXT": "Felixstowe",
+    "GBLGP": "London Gateway",
+    "GBSOU": "Southampton",
+    "ITGOA": "Genoa",
+    "ITLIV": "Livorno",
+    "ITNAP": "Naples",
+    "ITSPE": "La Spezia",
+    "ESBCN": "Barcelona",
+    "ESVLC": "Valencia",
+    "ESALG": "Algeciras",
+    "PTLEI": "Leixoes",
+    "GRPIR": "Piraeus",
+    "TRIZM": "Izmir",
+    "TRMER": "Mersin",
+    "EGALY": "Alexandria",
+    "EGPSD": "Port Said",
+    "MACAS": "Casablanca",
+    "DZALG": "Algiers",
+    "TNTUN": "Tunis",
+    "LBBEY": "Beirut",
+    "ILHFA": "Haifa",
+    "ILASD": "Ashdod",
+    "NOKRS": "Kristiansand",
+    "NOBGO": "Bergen",
+    "NOOSL": "Oslo",
+    "SEGOT": "Gothenburg",
+    "FIHEL": "Helsinki",
+    "PLGDN": "Gdansk",
+    "DKCPH": "Copenhagen",
+    # Africa
+    "ZADUR": "Durban",
+    "ZACPT": "Cape Town",
+    "ZAPLZ": "Port Elizabeth",
+    "KEMBA": "Mombasa",
+    "TZDAR": "Dar es Salaam",
+    "TZZNZ": "Zanzibar",
+    "NGAPP": "Apapa",
+    "NGLKK": "Lagos",
+    "GHTEM": "Tema",
+    "CIABJ": "Abidjan",
+    "CMDLA": "Douala",
+    "AOLAD": "Luanda",
+    "MRNKC": "Nouakchott",
+    "SNDKR": "Dakar",
+    # North America
+    "USLAX": "Los Angeles",
+    "USLGB": "Long Beach",
+    "USNYC": "New York",
+    "USOAK": "Oakland",
+    "USORF": "Norfolk",
+    "USSAV": "Savannah",
+    "USHOU": "Houston",
+    "USCHS": "Charleston",
+    "USMIA": "Miami",
+    "USSEA": "Seattle",
+    "CAVAN": "Vancouver",
+    "CAMTR": "Montreal",
+    "MXVER": "Veracruz",
+    "MXATM": "Altamira",
+    "MXLZC": "Lazaro Cardenas",
+    # South America
+    "BRSSZ": "Santos",
+    "BRRIO": "Rio de Janeiro",
+    "BRPNG": "Paranagua",
+    "CLSAI": "San Antonio",
+    "CLVAP": "Valparaiso",
+    "PECLL": "Callao",
+    "COCTG": "Cartagena",
+    "COBUN": "Buenaventura",
+    "ECGYE": "Guayaquil",
+    "ARBUE": "Buenos Aires",
+    "UYMVD": "Montevideo",
+    # Oceania
+    "AUMEL": "Melbourne",
+    "AUSYD": "Sydney",
+    "AUBNE": "Brisbane",
+    "AUFRE": "Fremantle",
+    "AUADL": "Adelaide",
+    "NZAKL": "Auckland",
+    "NZWLG": "Wellington",
+}
 
 
 def load_data():
@@ -69,6 +235,7 @@ async def root():
             "/port-pairs/{port_pair}": "Get data for a specific port pair",
             "/dates": "Get list of all available dates",
             "/search": "Search port pairs by origin and/or destination",
+            "/port-to-city": "Convert port codes to city names (string or array)",
             "/proxy": "Proxy to CMA CGM SpotOn API for live quotes",
         },
     }
@@ -184,6 +351,50 @@ async def search_port_pairs(origin: str = None, destination: str = None):
         "results": filtered_pairs,
         "count": len(filtered_pairs),
     }
+
+
+@app.get("/port-to-city")
+async def port_to_city(
+    ports: Union[str, List[str]] = Query(
+        ...,
+        description="Port code(s) - single string or array using multiple 'ports' params",
+    )
+):
+    """
+    Convert port code(s) to city name(s).
+
+    Accepts either:
+    - Single port code (string): /port-to-city?ports=CNYTN
+      Returns: "Yantian"
+
+    - Multiple port codes (array): /port-to-city?ports=CNYTN&ports=NLRTM&ports=USNYC
+      Returns: ["Yantian", "Rotterdam", "New York"]
+
+    If a single string is provided, returns just the city name as a string.
+    If multiple values are provided (array), returns an array of city names (strings).
+    Unknown ports will return "Unknown".
+
+    Examples:
+    - /port-to-city?ports=CNYTN
+      Returns: "Yantian"
+
+    - /port-to-city?ports=CNYTN&ports=NLRTM&ports=NOBGO
+      Returns: ["Yantian", "Rotterdam", "Bergen"]
+    """
+
+    # Check if it's a single string or a list
+    if isinstance(ports, str):
+        # Single port - return just the city name as a string
+        port_upper = ports.strip().upper()
+        return PORT_TO_CITY.get(port_upper, "Unknown")
+    else:
+        # Multiple ports - return array of city names
+        result = []
+        for port_code in ports:
+            port_upper = port_code.strip().upper()
+            if port_upper:  # Skip empty strings
+                result.append(PORT_TO_CITY.get(port_upper, "Unknown"))
+        return result
 
 
 @app.get("/proxy")
