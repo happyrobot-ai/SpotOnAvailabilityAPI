@@ -7,11 +7,17 @@ The `/port-to-city` endpoint converts UN/LOCODE port codes to their correspondin
 **Smart Response Format:**
 
 - Single port input → Returns a **string** (just the city name)
-- Multiple ports input → Returns an **array of strings** (just city names)
+- Multiple ports input → Returns an **array of strings** (city names)
+
+**Flexible Input Formats:**
+
+- Single string: `ports=NOBGO`
+- JSON array: `ports=["NOBGO","CNYTN","NLRTM"]`
+- Multiple params: `ports=NOBGO&ports=CNYTN&ports=NLRTM`
 
 ## Usage
 
-### Single Port Code (Returns String)
+### Method 1: Single Port String
 
 ```
 GET /port-to-city?ports=NOBGO
@@ -23,7 +29,19 @@ Response:
 "Bergen"
 ```
 
-### Multiple Port Codes (Returns Array of Strings)
+### Method 2: JSON Array String
+
+```
+GET /port-to-city?ports=["NOBGO","CNYTN","NLRTM","USNYC"]
+```
+
+Response:
+
+```json
+["Bergen", "Yantian", "Rotterdam", "New York"]
+```
+
+### Method 3: Multiple Query Parameters
 
 ```
 GET /port-to-city?ports=NOBGO&ports=CNYTN&ports=NLRTM&ports=USNYC
@@ -52,7 +70,7 @@ Response:
 **Multiple:**
 
 ```
-GET /port-to-city?ports=XXXXX&ports=NOBGO
+GET /port-to-city?ports=["XXXXX","NOBGO"]
 ```
 
 Response:
@@ -60,6 +78,22 @@ Response:
 ```json
 ["Unknown", "Bergen"]
 ```
+
+### Special Case: 'none'
+
+When you pass `ports=none` (case-insensitive), it returns an empty string:
+
+```
+GET /port-to-city?ports=none
+```
+
+Response:
+
+```json
+""
+```
+
+This is useful for handling optional port fields or placeholder values.
 
 ## Supported Ports
 
@@ -81,7 +115,11 @@ The endpoint includes mappings for major ports in:
 curl "http://localhost:8000/port-to-city?ports=NOBGO"
 # Output: "Bergen"
 
-# Multiple ports (returns array of strings)
+# JSON array (returns array of strings)
+curl "http://localhost:8000/port-to-city?ports=[\"NOBGO\",\"CNYTN\",\"NLRTM\"]"
+# Output: ["Bergen", "Yantian", "Rotterdam"]
+
+# Multiple params (returns array of strings)
 curl "http://localhost:8000/port-to-city?ports=NOBGO&ports=CNYTN&ports=NLRTM"
 # Output: ["Bergen", "Yantian", "Rotterdam"]
 ```
@@ -97,7 +135,19 @@ const city = await response.json();
 console.log(city); // "Bergen"
 ```
 
-### Multiple Ports
+### JSON Array Format
+
+```javascript
+const ports = ["NOBGO", "CNYTN", "NLRTM"];
+const portsJson = JSON.stringify(ports);
+const response = await fetch(
+  `/port-to-city?ports=${encodeURIComponent(portsJson)}`
+);
+const cities = await response.json();
+// cities = ["Bergen", "Yantian", "Rotterdam"]
+```
+
+### Multiple Query Params
 
 ```javascript
 const ports = ["NOBGO", "CNYTN", "NLRTM"];
@@ -106,24 +156,53 @@ ports.forEach((port) => params.append("ports", port));
 const response = await fetch(`/port-to-city?${params}`);
 const cities = await response.json();
 // cities = ["Bergen", "Yantian", "Rotterdam"]
-cities.forEach((city, index) => {
-  console.log(`${ports[index]} -> ${city}`);
-});
 ```
 
-## Python Example
+## Python Examples
 
 ```python
 import requests
+import json
 
 # Single port
 response = requests.get("http://localhost:8000/port-to-city", params={"ports": "NOBGO"})
 city = response.json()  # "Bergen"
 
-# Multiple ports
+# JSON array format
+ports = ["NOBGO", "CNYTN", "NLRTM"]
+response = requests.get(
+    "http://localhost:8000/port-to-city",
+    params={"ports": json.dumps(ports)}
+)
+cities = response.json()  # ["Bergen", "Yantian", "Rotterdam"]
+
+# Multiple params format
 response = requests.get(
     "http://localhost:8000/port-to-city",
     params=[("ports", "NOBGO"), ("ports", "CNYTN"), ("ports", "NLRTM")]
 )
 cities = response.json()  # ["Bergen", "Yantian", "Rotterdam"]
+```
+
+## Node.js/Axios Example
+
+```javascript
+const axios = require("axios");
+
+// Single port
+const city = await axios
+  .get("http://localhost:8000/port-to-city", {
+    params: { ports: "NOBGO" },
+  })
+  .then((res) => res.data);
+// city = "Bergen"
+
+// JSON array
+const ports = ["NOBGO", "CNYTN", "NLRTM"];
+const cities = await axios
+  .get("http://localhost:8000/port-to-city", {
+    params: { ports: JSON.stringify(ports) },
+  })
+  .then((res) => res.data);
+// cities = ["Bergen", "Yantian", "Rotterdam"]
 ```

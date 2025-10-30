@@ -357,7 +357,7 @@ async def search_port_pairs(origin: str = None, destination: str = None):
 async def port_to_city(
     ports: Union[str, List[str]] = Query(
         ...,
-        description="Port code(s) - single string or array using multiple 'ports' params",
+        description="Port code(s) - single string 'CNYTN' or array ['CNYTN','NLRTM'] or multiple params",
     )
 ):
     """
@@ -367,30 +367,68 @@ async def port_to_city(
     - Single port code (string): /port-to-city?ports=CNYTN
       Returns: "Yantian"
 
-    - Multiple port codes (array): /port-to-city?ports=CNYTN&ports=NLRTM&ports=USNYC
+    - Multiple port codes (array, JSON format): /port-to-city?ports=["CNYTN","NLRTM","USNYC"]
       Returns: ["Yantian", "Rotterdam", "New York"]
+
+    - Multiple port codes (repeated params): /port-to-city?ports=CNYTN&ports=NLRTM&ports=USNYC
+      Returns: ["Yantian", "Rotterdam", "New York"]
+
+    - Special case 'none': /port-to-city?ports=none
+      Returns: "" (empty string)
 
     If a single string is provided, returns just the city name as a string.
     If multiple values are provided (array), returns an array of city names (strings).
     Unknown ports will return "Unknown".
+    Special value "none" (case-insensitive) returns an empty string.
 
     Examples:
     - /port-to-city?ports=CNYTN
       Returns: "Yantian"
 
+    - /port-to-city?ports=["CNYTN","NLRTM","NOBGO"]
+      Returns: ["Yantian", "Rotterdam", "Bergen"]
+
     - /port-to-city?ports=CNYTN&ports=NLRTM&ports=NOBGO
       Returns: ["Yantian", "Rotterdam", "Bergen"]
+
+    - /port-to-city?ports=none
+      Returns: ""
     """
 
-    # Check if it's a single string or a list
+    # Handle special case: 'none' returns empty string
+    if isinstance(ports, str) and ports.lower() == "none":
+        return ""
+
+    # Handle different input formats
+    port_list = []
+
     if isinstance(ports, str):
+        # Check if it's a JSON array string
+        if ports.startswith("[") and ports.endswith("]"):
+            try:
+                # Parse JSON array
+                port_list = json.loads(ports)
+                if not isinstance(port_list, list):
+                    port_list = [ports]
+            except json.JSONDecodeError:
+                # If parsing fails, treat as single port
+                port_list = [ports]
+        else:
+            # Single port string
+            port_list = [ports]
+    else:
+        # Already a list (from multiple query params)
+        port_list = ports
+
+    # Process the ports
+    if len(port_list) == 1:
         # Single port - return just the city name as a string
-        port_upper = ports.strip().upper()
+        port_upper = port_list[0].strip().upper()
         return PORT_TO_CITY.get(port_upper, "Unknown")
     else:
         # Multiple ports - return array of city names
         result = []
-        for port_code in ports:
+        for port_code in port_list:
             port_upper = port_code.strip().upper()
             if port_upper:  # Skip empty strings
                 result.append(PORT_TO_CITY.get(port_upper, "Unknown"))
