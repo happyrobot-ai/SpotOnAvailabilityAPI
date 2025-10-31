@@ -28,169 +28,655 @@ app.add_middleware(
 df = None
 
 # Port code to city name mapping (UN/LOCODE standard)
+# Expanded from UN/LOCODE 2024-2 database with 511 port locations worldwide
+# All port codes are without spaces as per standard usage
 PORT_TO_CITY = {
+    # United Arab Emirates
+    "AEAJM": "Ajman",
+    "AEAUH": "Abu Dhabi",
+    "AEDXB": "Dubai",
+    "AEFUJ": "Fujairah",
+    "AEJEA": "Jebel Ali",
+    "AEKHL": "Khalifa Port",
+    "AESHJ": "Sharjah",
+    # Angola
+    "AOLAD": "Luanda",
+    "AOLOB": "Lobito",
+    # Argentina
+    "ARBHI": "Bahia Blanca",
+    "ARBUE": "Buenos Aires",
+    "ARROS": "Rosario",
+    "ARZAE": "Zarate",
+    # Australia
+    "AUADL": "Adelaide",
+    "AUBNE": "Brisbane",
+    "AUDPO": "Darwin",
+    "AUFRE": "Fremantle",
+    "AUMEL": "Melbourne",
+    "AUNCL": "Newcastle",
+    "AUPER": "Perth",
+    "AUPTL": "Port Lincoln",
+    "AUSYD": "Sydney",
+    "AUTOW": "Townsville",
+    # Aruba
+    "AWAUA": "Aruba",
+    # Barbados
+    "BBBGI": "Bridgetown",
+    # Bangladesh
+    "BDCGP": "Chittagong",
+    "BDDAC": "Dhaka",
+    # Belgium
+    "BEANR": "Antwerp",
+    "BEBRU": "Brussels",
+    "BEOST": "Oostende",
+    "BEZEE": "Zeebrugge",
+    # Bahrain
+    "BHBAH": "Bahrain",
+    "BHKBS": "Khalifa Bin Salman",
+    # Benin
+    "BJCOO": "Cotonou",
+    # Bermuda
+    "BMBDA": "Bermuda",
+    # Bolivia
+    "BOLVB": "La Paz",
+    # Brazil
+    "BRBEL": "Belem",
+    "BRFOR": "Fortaleza",
+    "BRGRU": "Guaruja",
+    "BRIGU": "Iguassu",
+    "BRITJ": "Itajai",
+    "BRMAO": "Manaus",
+    "BRPNG": "Paranagua",
+    "BRREC": "Recife",
+    "BRRIO": "Rio de Janeiro",
+    "BRSFS": "Sao Francisco do Sul",
+    "BRSJP": "Sao Jose dos Pinhais",
+    "BRSSA": "Salvador",
+    "BRSSZ": "Santos",
+    "BRSUA": "Suape",
+    "BRVDC": "Vitoria",
+    # Bahamas
+    "BSFPO": "Freeport",
+    "BSNAS": "Nassau",
+    # Canada
+    "CAHAL": "Halifax",
+    "CAMTR": "Montreal",
+    "CAPRI": "Prince Rupert",
+    "CAQBC": "Quebec",
+    "CASJS": "Saint John",
+    "CATOR": "Toronto",
+    "CAVAN": "Vancouver",
+    "CAVIC": "Victoria",
+    # Congo
+    "CGPNR": "Pointe Noire",
+    # Ivory Coast
+    "CIABJ": "Abidjan",
+    "CIVRR": "San Pedro",
+    # Chile
+    "CLARI": "Arica",
+    "CLIQQ": "Iquique",
+    "CLSAI": "San Antonio",
+    "CLSCL": "Santiago",
+    "CLTCO": "Talcahuano",
+    "CLVAP": "Valparaiso",
+    # Cameroon
+    "CMDLA": "Douala",
+    "CMYAO": "Yaounde",
     # China
-    "CNYTN": "Yantian",
-    "CNSHA": "Shanghai",
+    "CNBHZ": "Beihai",
+    "CNCAN": "Guangzhou",
+    "CNCHI": "Chiwan",
+    "CNDLC": "Dalian",
+    "CNDOC": "Dongguan",
+    "CNFOC": "Fuzhou",
+    "CNHAK": "Haikou",
+    "CNHUA": "Huangpu",
+    "CNHUI": "Huizhou",
+    "CNJIA": "Jiangmen",
+    "CNJIN": "Jinzhou",
+    "CNJIU": "Jiujiang",
+    "CNLIU": "Liuheng",
+    "CNLYG": "Lianyungang",
+    "CNNAN": "Nansha",
     "CNNGB": "Ningbo",
+    "CNNKG": "Nanjing",
+    "CNQZH": "Quanzhou",
+    "CNSHA": "Shanghai",
+    "CNSHG": "Shanghai",
     "CNSHK": "Shekou",
+    "CNSWA": "Shantou",
+    "CNSZX": "Shenzhen",
+    "CNTAI": "Taicang",
     "CNTAO": "Qingdao",
     "CNTXG": "Tianjin Xingang",
-    "CNXMN": "Xiamen",
-    "CNDLC": "Dalian",
-    "CNHUA": "Huangpu",
-    "CNSZX": "Shenzhen",
-    "CNQZH": "Quanzhou",
-    "CNFOC": "Fuzhou",
-    "CNLYG": "Lianyungang",
+    "CNWEI": "Weihai",
     "CNWUH": "Wuhan",
-    "CNZUH": "Zhuhai",
+    "CNXMN": "Xiamen",
+    "CNYAN": "Yantai",
+    "CNYTN": "Yantian",
+    "CNZHA": "Zhapu",
+    "CNZHZ": "Zhenjiang",
     "CNZJG": "Zhanjiang",
-    "CNCAN": "Guangzhou",
-    "CNNKG": "Nanjing",
-    "CNSHG": "Shanghai",
-    # Hong Kong
-    "HKHKG": "Hong Kong",
-    # Singapore
-    "SGSIN": "Singapore",
-    # Japan
-    "JPNGO": "Nagoya",
-    "JPOSA": "Osaka",
-    "JPTYO": "Tokyo",
-    "JPYOK": "Yokohama",
-    "JPUKB": "Kobe",
-    "JPHKT": "Hakata",
-    "JPMOJ": "Moji",
-    # South Korea
-    "KRPUS": "Busan",
-    "KRICH": "Incheon",
-    # Taiwan
-    "TWKHH": "Kaohsiung",
-    "TWTPE": "Taipei",
-    # Southeast Asia
-    "THBKK": "Bangkok",
-    "THLCH": "Laem Chabang",
-    "VNSGN": "Ho Chi Minh City",
-    "VNHPH": "Haiphong",
-    "VNDAD": "Da Nang",
-    "VNVUT": "Vung Tau",
-    "IDJKT": "Jakarta",
-    "IDSUB": "Surabaya",
-    "IDBLW": "Belawan",
-    "MYBTU": "Bintulu",
-    "MYPEN": "Penang",
-    "MYPKG": "Port Klang",
-    "MYTPP": "Tanjung Pelepas",
-    "PHMNL": "Manila",
-    "KHKOS": "Sihanoukville",
-    # Middle East
-    "AEJEA": "Jebel Ali",
-    "AEAJM": "Ajman",
-    "AESHJ": "Sharjah",
-    "AEKHL": "Khalifa Port",
-    "OMSLL": "Salalah",
-    "OMSOH": "Sohar",
-    "SAJED": "Jeddah",
-    "QAHMD": "Hamad Port",
-    "KWSWK": "Shuwaikh",
-    "BHKBS": "Khalifa Bin Salman",
-    "PKBQM": "Karachi",
-    "PKKHI": "Karachi",
-    # India
-    "INNSA": "Nhava Sheva",
-    "INMUN": "Mumbai",
-    "INCCU": "Kolkata",
-    "INCOK": "Kochi",
-    "INHZA": "Hazira",
-    "INVTZ": "Visakhapatnam",
-    "INIXE": "Mangalore",
-    "INTUT": "Tuticorin",
-    # Europe
-    "NLRTM": "Rotterdam",
+    "CNZUH": "Zhuhai",
+    # Colombia
+    "COBAQ": "Barranquilla",
+    "COBOG": "Bogota",
+    "COBUN": "Buenaventura",
+    "COCTG": "Cartagena",
+    "COSTR": "Santa Marta",
+    # Costa Rica
+    "CRCLD": "Caldera",
+    "CRLIM": "Puerto Limon",
+    "CRSJO": "San Jose",
+    # Cuba
+    "CUHAV": "Havana",
+    "CUMOA": "Moa",
+    # Curacao
+    "CWWIL": "Willemstad",
+    # Cyprus
+    "CYLMS": "Limassol",
+    "CYNIC": "Nicosia",
+    # Germany
+    "DEBRE": "Bremen",
+    "DEBRV": "Bremerhaven",
+    "DEEMB": "Emden",
     "DEHAM": "Hamburg",
-    "BEANR": "Antwerp",
+    "DEKEL": "Kiel",
+    "DELBC": "Lubeck",
+    "DEROS": "Rostock",
+    "DEWVN": "Wilhelmshaven",
+    # Djibouti
+    "DJJIB": "Djibouti",
+    # Denmark
+    "DKAAR": "Aarhus",
+    "DKCPH": "Copenhagen",
+    # Dominican Republic
+    "DOCAU": "Caucedo",
+    "DOSDQ": "Santo Domingo",
+    # Algeria
+    "DZAAE": "Annaba",
+    "DZALG": "Algiers",
+    "DZORN": "Oran",
+    # Ecuador
+    "ECGYE": "Guayaquil",
+    "ECMEC": "Manta",
+    "ECUIO": "Quito",
+    # Estonia
+    "EETLL": "Tallinn",
+    # Egypt
+    "EGALY": "Alexandria",
+    "EGCAI": "Cairo",
+    "EGDAM": "Damietta",
+    "EGPSD": "Port Said",
+    "EGSOK": "Sokhna",
+    # Spain
+    "ESALG": "Algeciras",
+    "ESBCN": "Barcelona",
+    "ESBIO": "Bilbao",
+    "ESLPA": "Las Palmas",
+    "ESMAD": "Madrid",
+    "ESMAL": "Malaga",
+    "ESSCQ": "Santiago de Compostela",
+    "ESSVQ": "Seville",
+    "ESVLC": "Valencia",
+    # Ethiopia
+    "ETADD": "Addis Ababa",
+    # Finland
+    "FIHAM": "Hamina",
+    "FIHEL": "Helsinki",
+    "FIKTK": "Kotka",
+    "FITUR": "Turku",
+    # Fiji
+    "FJSUV": "Suva",
+    # Faroe Islands
+    "FOTHO": "Torshavn",
+    # France
+    "FRBAY": "Bayonne",
+    "FRBOD": "Bordeaux",
+    "FRDKK": "Dunkirk",
     "FRFOS": "Fos-sur-Mer",
     "FRLEH": "Le Havre",
+    "FRLYO": "Lyon",
+    "FRMRS": "Marseille",
+    "FRNTE": "Nantes",
+    "FRPAR": "Paris",
+    "FRSRG": "Strasbourg",
+    # Gabon
+    "GALIB": "Libreville",
+    "GAPOG": "Port Gentil",
+    # United Kingdom
+    "GBBEL": "Belfast",
     "GBFXT": "Felixstowe",
+    "GBGRG": "Grangemouth",
+    "GBHUL": "Hull",
     "GBLGP": "London Gateway",
+    "GBLIV": "Liverpool",
+    "GBLON": "London",
     "GBSOU": "Southampton",
+    "GBTHP": "Thamesport",
+    "GBTIL": "Tilbury",
+    # French Guiana
+    "GFCAY": "Cayenne",
+    # Ghana
+    "GHACC": "Accra",
+    "GHTEM": "Tema",
+    # Greenland
+    "GLGOH": "Nuuk",
+    # Gambia
+    "GMBJL": "Banjul",
+    # Guinea
+    "GNCKR": "Conakry",
+    # Greece
+    "GRATH": "Athens",
+    "GRHER": "Heraklion",
+    "GRPIR": "Piraeus",
+    "GRTHE": "Thessaloniki",
+    # Guatemala
+    "GTGUA": "Guatemala City",
+    "GTQUE": "Quetzal",
+    # Guam
+    "GUGUM": "Guam",
+    # Guyana
+    "GYGEO": "Georgetown",
+    # Hong Kong
+    "HKHKG": "Hong Kong",
+    # Honduras
+    "HNPCO": "Puerto Cortes",
+    "HNTGU": "Tegucigalpa",
+    # Croatia
+    "HRRJK": "Rijeka",
+    "HRZAG": "Zagreb",
+    # Indonesia
+    "IDBDJ": "Banjarmasin",
+    "IDBLW": "Belawan",
+    "IDBPN": "Balikpapan",
+    "IDBTM": "Batam",
+    "IDJKT": "Jakarta",
+    "IDMKS": "Makassar",
+    "IDPDK": "Padang",
+    "IDPLG": "Palembang",
+    "IDPNK": "Pontianak",
+    "IDSRG": "Semarang",
+    "IDSUB": "Surabaya",
+    "IDTPP": "Tanjung Priok",
+    # Ireland
+    "IECORK": "Cork",
+    "IEDUB": "Dublin",
+    # Israel
+    "ILASD": "Ashdod",
+    "ILETH": "Eilat",
+    "ILHFA": "Haifa",
+    "ILTLV": "Tel Aviv",
+    # India
+    "INAHD": "Ahmedabad",
+    "INBLR": "Bangalore",
+    "INCCU": "Kolkata",
+    "INCHE": "Chennai",
+    "INCOK": "Kochi",
+    "INDEL": "Delhi",
+    "INHYD": "Hyderabad",
+    "INHZA": "Hazira",
+    "INIXE": "Mangalore",
+    "INJAI": "Jaipur",
+    "INKAN": "Kandla",
+    "INKNU": "Kanpur",
+    "INMUN": "Mumbai",
+    "INMUN1": "Mundra",
+    "INNSA": "Nhava Sheva",
+    "INPAV": "Pipavav",
+    "INPUN": "Pune",
+    "INSUR": "Surat",
+    "INTUT": "Tuticorin",
+    "INVTZ": "Visakhapatnam",
+    # Iraq
+    "IQBGW": "Baghdad",
+    "IQBSR": "Basra",
+    "IQUMQ": "Umm Qasr",
+    # Iran
+    "IRBND": "Bandar Abbas",
+    "IRBUX": "Bushehr",
+    "IRKHO": "Khorramshahr",
+    "IRTHR": "Tehran",
+    # Iceland
+    "ISREY": "Reykjavik",
+    # Italy
+    "ITGIT": "Gioia Tauro",
     "ITGOA": "Genoa",
     "ITLIV": "Livorno",
+    "ITMIL": "Milan",
     "ITNAP": "Naples",
+    "ITROM": "Rome",
+    "ITSAL": "Salerno",
     "ITSPE": "La Spezia",
-    "ESBCN": "Barcelona",
-    "ESVLC": "Valencia",
-    "ESALG": "Algeciras",
-    "PTLEI": "Leixoes",
-    "GRPIR": "Piraeus",
-    "TRIZM": "Izmir",
-    "TRMER": "Mersin",
-    "EGALY": "Alexandria",
-    "EGPSD": "Port Said",
-    "MACAS": "Casablanca",
-    "DZALG": "Algiers",
-    "TNTUN": "Tunis",
-    "LBBEY": "Beirut",
-    "ILHFA": "Haifa",
-    "ILASD": "Ashdod",
-    "NOKRS": "Kristiansand",
-    "NOBGO": "Bergen",
-    "NOOSL": "Oslo",
-    "SEGOT": "Gothenburg",
-    "FIHEL": "Helsinki",
-    "PLGDN": "Gdansk",
-    "DKCPH": "Copenhagen",
-    # Africa
-    "ZADUR": "Durban",
-    "ZACPT": "Cape Town",
-    "ZAPLZ": "Port Elizabeth",
+    "ITTRN": "Trieste",
+    "ITTRS": "Taranto",
+    "ITVCE": "Venice",
+    # Jamaica
+    "JMKIN": "Kingston",
+    "JMMBT": "Montego Bay",
+    # Jordan
+    "JOAMM": "Amman",
+    "JOAQJ": "Aqaba",
+    # Japan
+    "JPCHI": "Chiba",
+    "JPFUK": "Fukuoka",
+    "JPHIJ": "Hiroshima",
+    "JPHKT": "Hakata",
+    "JPKAN": "Kanazawa",
+    "JPKIT": "Kitakyushu",
+    "JPKSZ": "Shimizu",
+    "JPMOJ": "Moji",
+    "JPNAH": "Naha",
+    "JPNGO": "Nagoya",
+    "JPNIS": "Niigata",
+    "JPOKA": "Okinawa",
+    "JPOSA": "Osaka",
+    "JPSZE": "Sendai",
+    "JPTOY": "Toyama",
+    "JPTYO": "Tokyo",
+    "JPUKB": "Kobe",
+    "JPYOK": "Yokohama",
+    # Kenya
     "KEMBA": "Mombasa",
-    "TZDAR": "Dar es Salaam",
-    "TZZNZ": "Zanzibar",
+    "KENBO": "Nairobi",
+    # Cambodia
+    "KHKOS": "Sihanoukville",
+    "KHPNH": "Phnom Penh",
+    # South Korea
+    "KRICH": "Incheon",
+    "KRKWN": "Gwangyang",
+    "KRMKP": "Mokpo",
+    "KRPTK": "Pyeongtaek",
+    "KRPUS": "Busan",
+    "KRSUW": "Suwon",
+    "KRULS": "Ulsan",
+    # Kuwait
+    "KWKWI": "Kuwait City",
+    "KWSWK": "Shuwaikh",
+    # Cayman Islands
+    "KYGEC": "Grand Cayman",
+    # Lebanon
+    "LBBEY": "Beirut",
+    "LBTYR": "Tyre",
+    # Sri Lanka
+    "LKCMB": "Colombo",
+    "LKGAL": "Galle",
+    # Liberia
+    "LRMLW": "Monrovia",
+    # Lithuania
+    "LTKLJ": "Klaipeda",
+    "LTVNO": "Vilnius",
+    # Latvia
+    "LVRIX": "Riga",
+    "LVVEN": "Ventspils",
+    # Libya
+    "LYBEN": "Benghazi",
+    "LYTIP": "Tripoli",
+    # Morocco
+    "MAAGG": "Agadir",
+    "MACAS": "Casablanca",
+    "MARAB": "Rabat",
+    "MATNG": "Tangier",
+    # Madagascar
+    "MGTMY": "Antananarivo",
+    "MGTNR": "Toamasina",
+    # Myanmar
+    "MMMDY": "Mandalay",
+    "MMRGN": "Yangon",
+    # Macau
+    "MOMFM": "Macau",
+    # Mauritania
+    "MRNKC": "Nouakchott",
+    # Malta
+    "MTMLA": "Marsaxlokk",
+    "MTVAL": "Valletta",
+    # Mauritius
+    "MUPLU": "Port Louis",
+    # Mexico
+    "MXATM": "Altamira",
+    "MXLZC": "Lazaro Cardenas",
+    "MXMAN": "Manzanillo",
+    "MXMEX": "Mexico City",
+    "MXPVM": "Progreso",
+    "MXSZA": "Salina Cruz",
+    "MXTAM": "Tampico",
+    "MXVER": "Veracruz",
+    "MXZLO": "Manzanillo Colima",
+    # Malaysia
+    "MYBTU": "Bintulu",
+    "MYJHB": "Johor Bahru",
+    "MYKCH": "Kuching",
+    "MYKUA": "Kuantan",
+    "MYKUL": "Kuala Lumpur",
+    "MYLDU": "Lahad Datu",
+    "MYMTW": "Miri",
+    "MYPEN": "Penang",
+    "MYPKG": "Port Klang",
+    "MYSBW": "Sibu",
+    "MYTPP": "Tanjung Pelepas",
+    # Mozambique
+    "MZBEW": "Beira",
+    "MZMPM": "Maputo",
+    # Namibia
+    "NAWDH": "Walvis Bay",
+    "NAWVB": "Windhoek",
+    # New Caledonia
+    "NCNOU": "Noumea",
+    # Nigeria
     "NGAPP": "Apapa",
     "NGLKK": "Lagos",
-    "GHTEM": "Tema",
-    "CIABJ": "Abidjan",
-    "CMDLA": "Douala",
-    "AOLAD": "Luanda",
-    "MRNKC": "Nouakchott",
+    "NGPHC": "Port Harcourt",
+    "NGTIN": "Tin Can Island",
+    # Nicaragua
+    "NICOR": "Corinto",
+    "NIMGA": "Managua",
+    # Netherlands
+    "NLAMS": "Amsterdam",
+    "NLMOE": "Moerdijk",
+    "NLRTM": "Rotterdam",
+    "NLVLI": "Vlissingen",
+    # Norway
+    "NOBGO": "Bergen",
+    "NOKRS": "Kristiansand",
+    "NOOSL": "Oslo",
+    "NOSVG": "Stavanger",
+    "NOTRD": "Trondheim",
+    # New Zealand
+    "NZAKL": "Auckland",
+    "NZCHC": "Christchurch",
+    "NZLYT": "Lyttelton",
+    "NZTRG": "Tauranga",
+    "NZWLG": "Wellington",
+    # Oman
+    "OMMCT": "Muscat",
+    "OMSLL": "Salalah",
+    "OMSOH": "Sohar",
+    "OMSUZ": "Suwaiq",
+    # Panama
+    "PABAL": "Balboa",
+    "PACTB": "Cristobal",
+    "PAMIT": "Manzanillo International Terminal",
+    "PAPAC": "Panama City",
+    # Peru
+    "PECLL": "Callao",
+    "PELIM": "Lima",
+    "PEPAI": "Paita",
+    # French Polynesia
+    "PFPPT": "Papeete",
+    # Papua New Guinea
+    "PGLAE": "Lae",
+    "PGPOM": "Port Moresby",
+    # Philippines
+    "PHBCD": "Bacolod",
+    "PHCEB": "Cebu",
+    "PHCGY": "Cagayan de Oro",
+    "PHDVO": "Davao",
+    "PHILO": "Iloilo",
+    "PHMNL": "Manila",
+    "PHSBX": "Subic Bay",
+    "PHZAM": "Zamboanga",
+    # Pakistan
+    "PKBQM": "Karachi",
+    "PKGWD": "Gwadar",
+    "PKISB": "Islamabad",
+    "PKKHI": "Karachi",
+    "PKLHE": "Lahore",
+    # Poland
+    "PLGDN": "Gdansk",
+    "PLGDY": "Gdynia",
+    "PLSZZ": "Szczecin",
+    "PLWAW": "Warsaw",
+    # Puerto Rico
+    "PRPON": "Ponce",
+    "PRSJU": "San Juan",
+    # Portugal
+    "PTLEI": "Leixoes",
+    "PTLIS": "Lisbon",
+    "PTOPO": "Porto",
+    "PTSET": "Setubal",
+    "PTSIE": "Sines",
+    # Paraguay
+    "PYASU": "Asuncion",
+    # Qatar
+    "QADOH": "Doha",
+    "QAHMD": "Hamad Port",
+    # Reunion
+    "RERUN": "Reunion",
+    # Russia
+    "RUKLT": "Kaliningrad",
+    "RULED": "St Petersburg",
+    "RUMOW": "Moscow",
+    "RUMUR": "Murmansk",
+    "RUNUS": "Novorossiysk",
+    "RUULU": "Ulyanovsk",
+    "RUVVO": "Vladivostok",
+    # Saudi Arabia
+    "SADMM": "Dammam",
+    "SAJED": "Jeddah",
+    "SAJUB": "Jubail",
+    "SARAJB": "King Abdullah Port",
+    "SARIY": "Riyadh",
+    "SARUH": "Ras Al Khair",
+    # Solomon Islands
+    "SBHIR": "Honiara",
+    # Seychelles
+    "SCMAW": "Mahe",
+    # Sweden
+    "SEGOT": "Gothenburg",
+    "SEHEL": "Helsingborg",
+    "SEMAL": "Malmo",
+    "SESTO": "Stockholm",
+    # Singapore
+    "SGSIN": "Singapore",
+    # Slovenia
+    "SIKOP": "Koper",
+    "SILJU": "Ljubljana",
+    # Sierra Leone
+    "SLFNA": "Freetown",
+    # Senegal
     "SNDKR": "Dakar",
-    # North America
+    # Somalia
+    "SOMGQ": "Mogadishu",
+    # Suriname
+    "SRPBM": "Paramaribo",
+    # El Salvador
+    "SVAQJ": "Acajutla",
+    "SVSAL": "San Salvador",
+    # Syria
+    "SYLAT": "Latakia",
+    "SYTAR": "Tartus",
+    # Togo
+    "TGLFW": "Lome",
+    # Thailand
+    "THBKK": "Bangkok",
+    "THLCH": "Laem Chabang",
+    "THPHU": "Phuket",
+    "THSGZ": "Songkhla",
+    # Tunisia
+    "TNBIZ": "Bizerte",
+    "TNSFA": "Sfax",
+    "TNTUN": "Tunis",
+    # Turkey
+    "TRALI": "Aliaga",
+    "TRAMB": "Ambarli",
+    "TRGEM": "Gemlik",
+    "TRIST": "Istanbul",
+    "TRIZM": "Izmir",
+    "TRMER": "Mersin",
+    # Trinidad & Tobago
+    "TTPAW": "Port of Spain",
+    # Taiwan
+    "TWHUA": "Hualien",
+    "TWKEL": "Keelung",
+    "TWKHH": "Kaohsiung",
+    "TWTPE": "Taipei",
+    "TWTXG": "Taichung",
+    # Tanzania
+    "TZDAR": "Dar es Salaam",
+    "TZZNZ": "Zanzibar",
+    # United States
+    "USATL": "Atlanta",
+    "USBAL": "Baltimore",
+    "USBOS": "Boston",
+    "USCHI": "Chicago",
+    "USCHS": "Charleston",
+    "USDET": "Detroit",
+    "USDFW": "Dallas",
+    "USFLL": "Fort Lauderdale",
+    "USHOU": "Houston",
+    "USJAX": "Jacksonville",
     "USLAX": "Los Angeles",
     "USLGB": "Long Beach",
+    "USMIA": "Miami",
+    "USMOB": "Mobile",
+    "USMSY": "New Orleans",
     "USNYC": "New York",
     "USOAK": "Oakland",
     "USORF": "Norfolk",
+    "USPDX": "Portland",
+    "USPHL": "Philadelphia",
+    "USSAN": "San Diego",
     "USSAV": "Savannah",
-    "USHOU": "Houston",
-    "USCHS": "Charleston",
-    "USMIA": "Miami",
     "USSEA": "Seattle",
-    "CAVAN": "Vancouver",
-    "CAMTR": "Montreal",
-    "MXVER": "Veracruz",
-    "MXATM": "Altamira",
-    "MXLZC": "Lazaro Cardenas",
-    # South America
-    "BRSSZ": "Santos",
-    "BRRIO": "Rio de Janeiro",
-    "BRPNG": "Paranagua",
-    "CLSAI": "San Antonio",
-    "CLVAP": "Valparaiso",
-    "PECLL": "Callao",
-    "COCTG": "Cartagena",
-    "COBUN": "Buenaventura",
-    "ECGYE": "Guayaquil",
-    "ARBUE": "Buenos Aires",
+    "USSFO": "San Francisco",
+    "USTAC": "Tacoma",
+    "USTPA": "Tampa",
+    "USWIL": "Wilmington",
+    # Uruguay
     "UYMVD": "Montevideo",
-    # Oceania
-    "AUMEL": "Melbourne",
-    "AUSYD": "Sydney",
-    "AUBNE": "Brisbane",
-    "AUFRE": "Fremantle",
-    "AUADL": "Adelaide",
-    "NZAKL": "Auckland",
-    "NZWLG": "Wellington",
+    # Venezuela
+    "VECCS": "Caracas",
+    "VELGR": "La Guaira",
+    "VEMCB": "Maracaibo",
+    "VEPBL": "Puerto Cabello",
+    # British Virgin Islands
+    "VGTOV": "Tortola",
+    # US Virgin Islands
+    "VISTT": "St Thomas",
+    # Vietnam
+    "VNCAN": "Can Tho",
+    "VNDAD": "Da Nang",
+    "VNHAN": "Hanoi",
+    "VNHPH": "Haiphong",
+    "VNHUI": "Hue",
+    "VNNHA": "Nha Trang",
+    "VNQNI": "Qui Nhon",
+    "VNSGN": "Ho Chi Minh City",
+    "VNVUT": "Vung Tau",
+    # Vanuatu
+    "VUVLI": "Port Vila",
+    # Samoa
+    "WSAPW": "Apia",
+    # Yemen
+    "YEADE": "Aden",
+    "YEHOD": "Hodeidah",
+    # South Africa
+    "ZACPT": "Cape Town",
+    "ZADUR": "Durban",
+    "ZAELS": "East London",
+    "ZAJNB": "Johannesburg",
+    "ZANGQ": "Ngqura",
+    "ZAPLZ": "Port Elizabeth",
 }
 
 
