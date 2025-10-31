@@ -889,23 +889,48 @@ async def port_to_city(
     # Handle different input formats
     port_list = []
 
+    print(f"DEBUG - Received ports: {ports}")
+    print(f"DEBUG - Type: {type(ports)}")
+
     if isinstance(ports, str):
         # Check if it's a JSON array string
         if ports.startswith("[") and ports.endswith("]"):
+            print(f"DEBUG - Detected JSON array string")
             try:
                 # Parse JSON array
                 port_list = json.loads(ports)
+                print(f"DEBUG - Successfully parsed: {port_list}")
                 if not isinstance(port_list, list):
                     port_list = [ports]
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
                 # If parsing fails, treat as single port
+                print(f"DEBUG - JSON parsing failed: {e}")
                 port_list = [ports]
         else:
             # Single port string
+            print(f"DEBUG - Single port string")
             port_list = [ports]
     else:
-        # Already a list (from multiple query params)
-        port_list = ports
+        # Already a list (from multiple query params or FastAPI parsing)
+        print(f"DEBUG - Already a list")
+        # Check if it's a list with one element that's a JSON string
+        if (
+            len(ports) == 1
+            and isinstance(ports[0], str)
+            and ports[0].startswith("[")
+            and ports[0].endswith("]")
+        ):
+            print(f"DEBUG - List contains one JSON string element, parsing it")
+            try:
+                port_list = json.loads(ports[0])
+                print(f"DEBUG - Successfully parsed from list element: {port_list}")
+            except json.JSONDecodeError as e:
+                print(f"DEBUG - JSON parsing from list element failed: {e}")
+                port_list = ports
+        else:
+            port_list = ports
+
+    print(f"DEBUG - Final port_list: {port_list}, length: {len(port_list)}")
 
     # Process the ports
     if len(port_list) == 1:
