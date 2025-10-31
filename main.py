@@ -919,6 +919,7 @@ async def port_to_city(
             port_upper = port_code.strip().upper()
             if port_upper:  # Skip empty strings
                 result.append(PORT_TO_CITY.get(port_upper, ""))
+        print(result)
         return {"cities": result}
 
 
