@@ -115,6 +115,7 @@ PORT_TO_CITY = {
     # Chile
     "CLARI": "Arica",
     "CLIQQ": "Iquique",
+    "CLLQN": "Lirquen",
     "CLSAI": "San Antonio",
     "CLSCL": "Santiago",
     "CLTCO": "Talcahuano",
