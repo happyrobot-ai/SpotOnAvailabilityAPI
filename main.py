@@ -963,13 +963,16 @@ async def proxy_spoton_request(
     ),
 ):
     """
-    Proxy endpoint to query CMA CGM SpotOn API.
+    Proxy endpoint to query CMA CGM SpotOn API with automatic pagination.
 
-    Makes a POST request to the CMA CGM API and returns the original response.
+    Makes POST requests to the CMA CGM API and aggregates all results in parallel.
+    If there are multiple pages of results, fetches them concurrently for better performance.
 
     Example:
     /proxy?portOfLoading=ESBIO&portOfDischarge=BRSSZ&departureDate=2025-11-15&requestedEquipments=[{"numberOfContainers":5,"weightPerContainer":18000,"equipmentGroupIsoCode":"40GP"}]
     """
+    import concurrent.futures
+    import time
 
     # Parse requestedEquipments JSON string
     try:
@@ -998,28 +1001,104 @@ async def proxy_spoton_request(
         "requestedEquipments": equipment_list,
     }
 
-    # Make the POST request to CMA CGM API
     url = "https://apis.cma-cgm.net/pricing/commercial/instantquote/v2/spotOn/search"
     params = {"behalfOf": "API0001734"}
-    headers = {
-        "Authorization": f"Bearer {bearer_token}",
-        "Range": "0-4",
-        "Content-Type": "application/json",
-    }
 
-    try:
+    def make_request(range_header: str):
+        """Helper function to make a single request with a specific range."""
+        headers = {
+            "Authorization": f"Bearer {bearer_token}",
+            "Range": range_header,
+            "Content-Type": "application/json",
+        }
         response = requests.post(
             url, params=params, headers=headers, json=payload, timeout=30
         )
         response.raise_for_status()
+        return response
 
-        # Return the original response from CMA CGM API
-        return {"data": response.json()}
+    start_time = time.time()
+
+    try:
+        # Make initial request to get first page and determine total results
+        print(f"Making initial request with Range: 0-4")
+        initial_response = make_request("0-4")
+
+        all_data = initial_response.json()
+        content_range = initial_response.headers.get("content-range")
+        status_code = initial_response.status_code
+        cma_func_explain = initial_response.headers.get("cma-func-explain")
+
+        print(f"Initial response: status={status_code}, content-range={content_range}")
+
+        # Check if there are more pages (status 206 = Partial Content)
+        if status_code == 206 and content_range:
+            # Parse content-range header: "0-4/15" means items 0-4 out of 15 total
+            parts = content_range.split("/")
+            if len(parts) == 2:
+                total_items = int(parts[1])
+                current_end = int(parts[0].split("-")[1])
+
+                print(f"Total items: {total_items}, got up to: {current_end}")
+
+                # Calculate remaining ranges to fetch (5 items per request)
+                remaining_ranges = []
+                start = current_end + 1
+                while start < total_items:
+                    end = min(
+                        start + 4, total_items - 1
+                    )  # Max 5 items per request (0-4)
+                    remaining_ranges.append(f"{start}-{end}")
+                    start = end + 1
+
+                print(
+                    f"Need to fetch {len(remaining_ranges)} more pages: {remaining_ranges}"
+                )
+
+                # Fetch remaining pages in parallel
+                if remaining_ranges:
+                    with concurrent.futures.ThreadPoolExecutor(
+                        max_workers=5
+                    ) as executor:
+                        future_to_range = {
+                            executor.submit(make_request, range_header): range_header
+                            for range_header in remaining_ranges
+                        }
+
+                        for future in concurrent.futures.as_completed(future_to_range):
+                            range_header = future_to_range[future]
+                            try:
+                                response = future.result()
+                                page_data = response.json()
+                                all_data.extend(page_data)
+                                print(
+                                    f"Fetched range {range_header}: {len(page_data)} items"
+                                )
+                            except Exception as e:
+                                print(f"Error fetching range {range_header}: {e}")
+                                raise
+
+        elapsed_time = time.time() - start_time
+        print(
+            f"Total aggregation time: {elapsed_time:.2f}s, Total items: {len(all_data)}"
+        )
+
+        # Return aggregated results with metadata
+        return {
+            "data": all_data,
+            "metadata": {
+                "total_items": len(all_data),
+                "aggregation_time_seconds": round(elapsed_time, 2),
+                "initial_content_range": content_range,
+                "cma_func_explain": cma_func_explain,
+                "status": "complete",
+            },
+        }
 
     except requests.exceptions.HTTPError as e:
         raise HTTPException(
-            status_code=response.status_code,
-            detail=f"CMA CGM API error: {response.text}",
+            status_code=e.response.status_code,
+            detail=f"CMA CGM API error: {e.response.text}",
         )
     except requests.exceptions.RequestException as e:
         raise HTTPException(
