@@ -59,5 +59,15 @@ condensed_sample.json
 test_condensed.py
 agent_node_code.py
 parse_spoton_response.py
+
+# Schedule-related files
 schedule.json
 schedule1.json
+schedule_parsed.json
+simple_schedule.json
+schedule_parser.py
+
+# Documentation files
+SCHEDULE_GUIDE.md
+AI_AGENT_INSTRUCTIONS.md
+schedule_parsed_simple.json

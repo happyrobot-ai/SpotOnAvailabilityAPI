@@ -958,6 +958,7 @@ async def proxy_spoton_request(
         ...,
         description='JSON array of equipment requests, e.g., [{"numberOfContainers":5,"weightPerContainer":18000,"equipmentGroupIsoCode":"40GP"}]',
     ),
+    behalfOf: str = Query(..., description="BehalfOf identifier (e.g., API0001734)"),
     token: Optional[str] = Query(
         None,
         description="Optional Bearer token (if not provided, uses environment variable)",
@@ -970,7 +971,7 @@ async def proxy_spoton_request(
     If there are multiple pages of results, fetches them concurrently for better performance.
 
     Example:
-    /proxy?portOfLoading=ESBIO&portOfDischarge=BRSSZ&departureDate=2025-11-15&requestedEquipments=[{"numberOfContainers":5,"weightPerContainer":18000,"equipmentGroupIsoCode":"40GP"}]
+    /proxy?portOfLoading=ESBIO&portOfDischarge=BRSSZ&departureDate=2025-11-15&requestedEquipments=[{"numberOfContainers":5,"weightPerContainer":18000,"equipmentGroupIsoCode":"40GP"}]&behalfOf=API0001734
     """
     import concurrent.futures
     import time
@@ -1003,7 +1004,7 @@ async def proxy_spoton_request(
     }
 
     url = "https://apis.cma-cgm.net/pricing/commercial/instantquote/v2/spotOn/search"
-    params = {"behalfOf": "API0001734"}
+    params = {"behalfOf": behalfOf}
 
     def make_request(range_header: str):
         """Helper function to make a single request with a specific range."""
