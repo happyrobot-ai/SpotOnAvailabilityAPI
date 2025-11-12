@@ -724,6 +724,7 @@ async def root():
             "/search": "Search port pairs by origin and/or destination",
             "/port-to-city": "Convert port codes to city names (string or array)",
             "/proxy": "Proxy to CMA CGM SpotOn API for live quotes",
+            "/proxy-schedule": "Proxy to CMA CGM Route API for schedule/routing information",
         },
     }
 
@@ -1070,6 +1071,169 @@ async def proxy_spoton_request(
                             try:
                                 response = future.result()
                                 page_data = response.json()
+                                all_data.extend(page_data)
+                                print(
+                                    f"Fetched range {range_header}: {len(page_data)} items"
+                                )
+                            except Exception as e:
+                                print(f"Error fetching range {range_header}: {e}")
+                                raise
+
+        elapsed_time = time.time() - start_time
+        print(
+            f"Total aggregation time: {elapsed_time:.2f}s, Total items: {len(all_data)}"
+        )
+
+        # Return aggregated results with metadata
+        return {
+            "data": all_data,
+            "metadata": {
+                "total_items": len(all_data),
+                "aggregation_time_seconds": round(elapsed_time, 2),
+                "initial_content_range": content_range,
+                "cma_func_explain": cma_func_explain,
+                "status": "complete",
+            },
+        }
+
+    except requests.exceptions.HTTPError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"CMA CGM API error: {e.response.text}",
+        )
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(
+            status_code=503, detail=f"Failed to connect to CMA CGM API: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.get("/proxy-schedule")
+async def proxy_schedule_request(
+    placeOfLoading: str = Query(..., description="Place of loading (e.g., ESBIO)"),
+    placeOfDischarge: str = Query(..., description="Place of discharge (e.g., BRSSZ)"),
+    token: Optional[str] = Query(
+        None,
+        description="Optional Bearer token (if not provided, uses environment variable)",
+    ),
+):
+    """
+    Proxy endpoint to query CMA CGM Route API for schedule/routing information with automatic pagination.
+
+    Makes GET requests to the CMA CGM API and aggregates all results in parallel.
+    If there are multiple pages of results, fetches them concurrently for better performance.
+
+    Example:
+    /proxy-schedule?placeOfLoading=ESBIO&placeOfDischarge=BRSSZ
+    """
+    import concurrent.futures
+    import time
+
+    # Get token from parameter or environment variable
+    bearer_token = token or os.environ.get("CMA_CGM_TOKEN")
+    if not bearer_token:
+        raise HTTPException(
+            status_code=401,
+            detail="No authentication token provided. Use 'token' parameter or set CMA_CGM_TOKEN environment variable.",
+        )
+
+    url = "https://apis.cma-cgm.net/vesseloperation/route/v2/routings"
+    params = {
+        "placeOfLoading": placeOfLoading,
+        "placeOfDischarge": placeOfDischarge,
+    }
+
+    def make_request(range_header: str = None):
+        """Helper function to make a single request with an optional range."""
+        headers = {
+            "Authorization": f"Bearer {bearer_token}",
+            "Content-Type": "application/json",
+        }
+        if range_header:
+            headers["Range"] = range_header
+
+        response = requests.get(url, params=params, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response
+
+    start_time = time.time()
+
+    try:
+        # Make initial request to get first page and determine total results
+        print(f"Making initial request with Range: 0-4")
+        initial_response = make_request("0-4")
+
+        all_data = initial_response.json()
+        content_range = initial_response.headers.get("content-range")
+        status_code = initial_response.status_code
+        cma_func_explain = initial_response.headers.get("cma-func-explain")
+
+        print(f"Initial response: status={status_code}, content-range={content_range}")
+
+        # Handle both array and object responses
+        if not isinstance(all_data, list):
+            # If response is not a list, wrap it or handle accordingly
+            if isinstance(all_data, dict):
+                # If it's a dict, check if it contains a data/list field
+                if "data" in all_data and isinstance(all_data["data"], list):
+                    all_data = all_data["data"]
+                else:
+                    # Single object response, convert to list
+                    all_data = [all_data]
+            else:
+                all_data = [all_data]
+
+        # Check if there are more pages (status 206 = Partial Content)
+        if status_code == 206 and content_range:
+            # Parse content-range header: "0-4/15" means items 0-4 out of 15 total
+            parts = content_range.split("/")
+            if len(parts) == 2:
+                total_items = int(parts[1])
+                current_end = int(parts[0].split("-")[1])
+
+                print(f"Total items: {total_items}, got up to: {current_end}")
+
+                # Calculate remaining ranges to fetch (5 items per request)
+                remaining_ranges = []
+                start = current_end + 1
+                while start < total_items:
+                    end = min(
+                        start + 4, total_items - 1
+                    )  # Max 5 items per request (0-4)
+                    remaining_ranges.append(f"{start}-{end}")
+                    start = end + 1
+
+                print(
+                    f"Need to fetch {len(remaining_ranges)} more pages: {remaining_ranges}"
+                )
+
+                # Fetch remaining pages in parallel
+                if remaining_ranges:
+                    with concurrent.futures.ThreadPoolExecutor(
+                        max_workers=5
+                    ) as executor:
+                        future_to_range = {
+                            executor.submit(make_request, range_header): range_header
+                            for range_header in remaining_ranges
+                        }
+
+                        for future in concurrent.futures.as_completed(future_to_range):
+                            range_header = future_to_range[future]
+                            try:
+                                response = future.result()
+                                page_data = response.json()
+
+                                # Handle different response formats
+                                if not isinstance(page_data, list):
+                                    if (
+                                        isinstance(page_data, dict)
+                                        and "data" in page_data
+                                    ):
+                                        page_data = page_data["data"]
+                                    else:
+                                        page_data = [page_data]
+
                                 all_data.extend(page_data)
                                 print(
                                     f"Fetched range {range_header}: {len(page_data)} items"
