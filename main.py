@@ -1113,6 +1113,14 @@ async def proxy_spoton_request(
 async def proxy_schedule_request(
     placeOfLoading: str = Query(..., description="Place of loading (e.g., ESBIO)"),
     placeOfDischarge: str = Query(..., description="Place of discharge (e.g., BRSSZ)"),
+    departureDate: Optional[str] = Query(
+        None,
+        description="Optional departure date (YYYY-MM-DD format)",
+    ),
+    arrivalDate: Optional[str] = Query(
+        None,
+        description="Optional arrival date (YYYY-MM-DD format)",
+    ),
     token: Optional[str] = Query(
         None,
         description="Optional Bearer token (if not provided, uses environment variable)",
@@ -1124,8 +1132,10 @@ async def proxy_schedule_request(
     Makes GET requests to the CMA CGM API and aggregates all results in parallel.
     If there are multiple pages of results, fetches them concurrently for better performance.
 
-    Example:
+    Examples:
     /proxy-schedule?placeOfLoading=ESBIO&placeOfDischarge=BRSSZ
+    /proxy-schedule?placeOfLoading=CNSHA&placeOfDischarge=NLRTM&departureDate=2025-11-15
+    /proxy-schedule?placeOfLoading=CNSHA&placeOfDischarge=NLRTM&departureDate=2025-11-15&arrivalDate=2025-12-31
     """
     import concurrent.futures
     import time
@@ -1142,7 +1152,14 @@ async def proxy_schedule_request(
     params = {
         "placeOfLoading": placeOfLoading,
         "placeOfDischarge": placeOfDischarge,
+        "searchRange": 35,
     }
+
+    # Add optional date parameters if provided
+    if departureDate:
+        params["departureDate"] = departureDate
+    if arrivalDate:
+        params["arrivalDate"] = arrivalDate
 
     def make_request(range_header: str = None):
         """Helper function to make a single request with an optional range."""
